@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SICHROEL SHOP – Fast. Safe. GG.</title>
+<style>
+body { margin:0; font-family:'Segoe UI',sans-serif; background:#0f172a; color:#e5e7eb; }
+header { padding:40px 20px; text-align:center; background:linear-gradient(135deg,#020617,#0f172a); }
+header h1 { font-size:36px; margin-bottom:10px; }
+header p { font-size:18px; color:#cbd5f5; }
+.badge { display:inline-block; margin-top:15px; padding:8px 16px; background:#22c55e; color:#022c22; border-radius:20px; font-weight:bold; }
+section { padding:40px 20px; max-width:1100px; margin:auto; }
+h2 { text-align:center; margin-bottom:30px; }
+.games { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:20px; margin-top:20px; }
+.card { background:#020617; border-radius:16px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,.3); }
+.card img { width:100%; border-radius:12px; margin-bottom:15px; }
+.card h3 { margin:0 0 10px; }
+input, select { background:#0f172a; border:1px solid #334155; color:#e5e7eb; padding:8px; border-radius:8px; width:100%; margin-top:10px; }
+input:focus, select:focus { outline:none; border-color:#22c55e; box-shadow:0 0 5px #22c55e; }
+.order-btn { display:block; margin-top:15px; padding:12px; text-align:center; background:#22c55e; color:#022c22; border-radius:12px; text-decoration:none; font-weight:bold; transition:.3s; }
+.order-btn:hover { background:#16a34a; color:#fff; cursor:pointer; }
+.flow { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:20px; text-align:center; }
+.flow div { background:#020617; padding:20px; border-radius:16px; }
+.qris { background:#1e293b; padding:20px; border-radius:12px; text-align:center; font-size:18px; font-weight:bold; color:#22c55e; margin:40px 20px; }
+footer { text-align:center; padding:30px; font-size:14px; color:#94a3b8; }
+</style>
+</head>
+<body>
+
+<header>
+<h1>SICHROEL SHOP</h1>
+<p>Fast. Safe. GG.</p>
+<div class="badge">Metode Pembayaran: QRIS ONLY</div>
+</header>
+
+<section>
+<h2>🔥 Cara Order</h2>
+<div class="flow">
+  <div>🎮 Pilih Game & Product</div>
+  <div>🆔 Isi User ID server/username</div>
+  <div>🛒 Klik Buy (Chat WA)</div>
+  <div>⚡ Admin Cek Stok → QRIS → Proses</div>
+</div>
+</section>
+
+<section>
+<h2>🎮 Top Up Game</h2>
+<div class="games">
+<!-- Card akan digenerate otomatis dari CSV -->
+</div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script>
+// Buy WA
+function orderWA(game, nominal, user, server){
+  const text = `Halo admin Sichroel TopUp 👋
+Saya mau top up:
+
+Game: ${game}
+Nominal: ${nominal}
+User ID: ${user}
+Server (jika ada): ${server || '-'}
+
+Mohon cek stok ya 🙏`;
+
+  const url = `https://wa.me/6285888747908?text=${encodeURIComponent(text)}`;
+  window.open(url,'_blank');
+}
+
+// CSV raw GitHub
+const csvUrl = 'https://raw.githubusercontent.com/sichroelofficial-hub/sichroelshop/main/sichroelshop/CSV%20LIST.csv';
+
+Papa.parse(csvUrl,{
+  download:true,
+  header:true,
+  complete:function(results){
+    const data = results.data;
+    const gamesContainer = document.querySelector('.games');
+    gamesContainer.innerHTML = '';
+
+    // Kelompokkan per game
+    const games = {};
+    data.forEach(item=>{
+      if(!item.Game) return; // skip baris kosong
+      if(!games[item.Game]) games[item.Game]=[];
+      games[item.Game].push(item);
+    });
+
+    // Loop tiap game
+    for(const game in games){
+      const gameItems = games[game];
+      const card = document.createElement('div');
+      card.className='card';
+      card.setAttribute('data-game',game);
+
+      const img = document.createElement('img');
+      img.src=gameItems[0].ImageURL || '';
+      img.alt=game;
+
+      const h3 = document.createElement('h3');
+      h3.textContent=game;
+
+      const label = document.createElement('label');
+      label.textContent='Nominal';
+
+      const select = document.createElement('select');
+      select.className='nominal';
+
+      gameItems.forEach(item=>{
+        const option=document.createElement('option');
+        if(item['Harga Asli'] && item['Harga Diskon']){
+          option.textContent=`${item.Nama} – Rp${parseInt(item['Harga Asli']).toLocaleString()} → Rp${parseInt(item['Harga Diskon']).toLocaleString()}`;
+          option.value=`${item.Nama} - Rp${parseInt(item['Harga Diskon']).toLocaleString()}`;
+        }else{
+          option.textContent=`${item.Nama} – Rp${parseInt(item['Harga Diskon'] || item['Harga Asli']).toLocaleString()}`;
+          option.value=`${item.Nama} - Rp${parseInt(item['Harga Diskon'] || item['Harga Asli']).toLocaleString()}`;
+        }
+        select.appendChild(option);
+      });
+
+      const userInput=document.createElement('input');
+      userInput.type='text';
+      userInput.placeholder='User ID';
+      userInput.className='user_id';
+
+      const serverInput=document.createElement('input');
+      serverInput.type='text';
+      serverInput.placeholder='Server';
+      serverInput.className='server';
+
+      const btn=document.createElement('button');
+      btn.className='order-btn';
+      btn.textContent='Buy';
+
+      btn.addEventListener('click',()=>{
+        const nominal=select.value;
+        const user=userInput.value.trim();
+        const server=serverInput.value.trim();
+        if(!user){ alert('Isi User ID dulu!'); return; }
+        if(game==='ML' && !server){ alert('Isi Server dulu!'); return; }
+        orderWA(game,nominal,user,server);
+      });
+
+      card.append(img,h3,label,select,userInput);
+      if(game==='ML') card.appendChild(serverInput);
+      card.appendChild(btn);
+      gamesContainer.appendChild(card);
+    }
+  }
+});
+</script>
+
+<section class="qris">
+⚠️ Pembayaran hanya melalui QRIS setelah admin konfirmasi stok
+</section>
+
+<footer>
+© 2026 SICHROEL SHOP • Trusted Game Top Up
+</footer>
+
+</body>
+</html>
